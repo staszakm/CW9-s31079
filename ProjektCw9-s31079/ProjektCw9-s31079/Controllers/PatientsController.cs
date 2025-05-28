@@ -19,7 +19,6 @@ public class PatientsController(IDbService service) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreatePrescription([FromBody] PrescriptionCreateDTO prescription)
     {
-        //return await service.AddPrescriptionAsync(prescription);
         try
         {
             var prescriptionId = await service.AddPrescriptionAsync(prescription);
