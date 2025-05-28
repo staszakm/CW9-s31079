@@ -19,6 +19,20 @@ public class PatientsController(IDbService service) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreatePrescription([FromBody] PrescriptionCreateDTO prescription)
     {
-        return await service.AddPrescriptionAsync(prescription);
+        //return await service.AddPrescriptionAsync(prescription);
+        try
+        {
+            var prescriptionId = await service.AddPrescriptionAsync(prescription);
+            
+            return Created("", new { IdPrescription = prescriptionId, Message = "Recepta została utworzona pomyślnie." });
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 }

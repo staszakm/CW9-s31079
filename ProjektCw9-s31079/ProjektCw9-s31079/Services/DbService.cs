@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjektCw9_s31079.Data;
 using ProjektCw9_s31079.DTOs;
+using ProjektCw9_s31079.Exceptions;
 using ProjektCw9_s31079.Models;
 
 namespace ProjektCw9_s31079.Services;
@@ -9,7 +10,7 @@ namespace ProjektCw9_s31079.Services;
 public interface IDbService
 {
     public Task<ICollection<PatientGetDTO>> GetPatientsAsync();
-    public Task<IActionResult> AddPrescriptionAsync(PrescriptionCreateDTO prescription);
+    public Task<int> AddPrescriptionAsync(PrescriptionCreateDTO prescription);
 }
 
 public class DbService(AppDbContext data) : IDbService 
@@ -44,16 +45,16 @@ public class DbService(AppDbContext data) : IDbService
         }).ToListAsync();
     }
 
-    public async Task<IActionResult> AddPrescriptionAsync(PrescriptionCreateDTO prescription)
+    public async Task<int> AddPrescriptionAsync(PrescriptionCreateDTO prescription)
     {
         if (prescription.DueDate < prescription.Date)
         {
-            return new BadRequestObjectResult("Data przydatności nie może być przeszła");
+            throw new NotFoundException("Data przydatności nie może być przeszła");
         }
 
         if (prescription.Medicaments == null || prescription.Medicaments.Count() == 0 || prescription.Medicaments.Count() > 10)
         {
-            return new BadRequestObjectResult("Brak lub zbyt wiele dodanych leków");
+            throw new NotFoundException("Brak lub zbyt wiele dodanych leków");
         }
         
         var allMedIds = prescription.Medicaments.Select(m => m.IdMedicament).ToList();
@@ -63,7 +64,7 @@ public class DbService(AppDbContext data) : IDbService
             .ToListAsync();
 
         if (existingMeds.Count != allMedIds.Count)
-            return new BadRequestObjectResult("Podano nie istniejący lek");
+            throw new NotFoundException("Podano nie istniejący lek");
         
         Patient patient;
         if (prescription.Patient.IdPatient != 0)
@@ -95,7 +96,7 @@ public class DbService(AppDbContext data) : IDbService
         
         var doctor = await data.Doctors.FindAsync(prescription.IdDoctor);
         if (doctor == null)
-            return new BadRequestObjectResult("Lekarz nie istnieje.");
+            throw new NotFoundException("Lekarz nie istnieje.");
         
         var newPrescript = new Prescription
         {
@@ -118,7 +119,7 @@ public class DbService(AppDbContext data) : IDbService
         data.Prescription_Medicaments.AddRange(prescriptionMedicaments);
         await data.SaveChangesAsync();
 
-        return new OkObjectResult("Recepta została dodana");
+        return newPrescript.IdPrescription;
     }
     
     
